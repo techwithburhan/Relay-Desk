@@ -1,0 +1,16 @@
+.session-timer{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:700;color:var(--ink-600);
+  font-family:'JetBrains Mono',monospace;
+  background:var(--slate-light);
+  border-radius:8px;padding:8px 11px;
+}
+.session-timer svg{width:14px;height:14px;}
+.session-timer.low{
+  color:#B23A28;background:var(--coral-light);
+  animation:pulseTimer 1s infinite;
+}
+@keyframes pulseTimer{
+  0%,100%{opacity:1;}
+  50%{opacity:.6;}
+}

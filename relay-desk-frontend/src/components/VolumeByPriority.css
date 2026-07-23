@@ -1,0 +1,6 @@
+.volume-panel{padding-bottom:18px;}
+.donut-svg{display:block;margin:6px auto 0;}
+.legend{display:flex;flex-direction:column;gap:9px;margin-top:12px;}
+.legend-row{display:flex;align-items:center;font-size:12px;color:var(--ink-600);}
+.legend-dot{width:8px;height:8px;border-radius:2px;margin-right:8px;}
+.legend-val{margin-left:auto;font-weight:700;color:var(--ink-900);font-family:'Space Grotesk',sans-serif;}

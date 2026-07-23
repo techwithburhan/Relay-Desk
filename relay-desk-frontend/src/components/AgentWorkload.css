@@ -1,0 +1,5 @@
+.workload-panel{padding-bottom:18px;}
+.agent-bar-row{display:flex;align-items:flex-end;gap:14px;height:110px;margin:14px 6px 8px;}
+.agent-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px;}
+.agent-bar{width:100%;border-radius:5px 5px 0 0;background:linear-gradient(180deg,#1BB8A6,var(--teal));}
+.agent-name{font-size:10px;color:var(--ink-400);white-space:nowrap;}
