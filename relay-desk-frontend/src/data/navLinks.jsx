@@ -13,7 +13,6 @@ export const workspaceLinks = [
   {
     to: '/tickets',
     label: 'Tickets',
-    badge: 312,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -64,6 +63,15 @@ export const workspaceLinks = [
       </svg>
     ),
   },
+  {
+    to: '/transfers',
+    label: 'Pending Transfers',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M7 16V4M7 4l-3 3M7 4l3 3M17 8v12M17 20l3-3M17 20l-3-3" />
+      </svg>
+    ),
+  },
 ];
 
 // Some workspace links only make sense for certain roles (e.g. a "client"
@@ -71,7 +79,7 @@ export const workspaceLinks = [
 // `roles` array, it's shown to everyone.
 export function visibleWorkspaceLinks(role) {
   return workspaceLinks.filter((link) => {
-    if (link.to === '/customers' || link.to === '/reports') {
+    if (link.to === '/customers' || link.to === '/reports' || link.to === '/transfers') {
       return role === 'admin' || role === 'dealer';
     }
     if (!link.roles) return true;
@@ -118,6 +126,25 @@ export const adminLinks = [
         <circle cx="9" cy="8" r="3.2" />
         <path d="M2.5 20c1-3.6 3.7-5.5 6.5-5.5s5.5 1.9 6.5 5.5" />
         <path d="M17 8h4M19 6v4" />
+      </svg>
+    ),
+  },
+  {
+    to: '/admin/users',
+    label: 'User Management',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20c1.5-4.5 5-6.5 8-6.5s6.5 2 8 6.5" />
+      </svg>
+    ),
+  },
+  {
+    to: '/admin/branches',
+    label: 'Branch Management',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M15 9h.01M15 13h.01" />
       </svg>
     ),
   },

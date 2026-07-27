@@ -1,10 +1,10 @@
 import StatCard from '../StatCard';
 
-export default function OpenTicketsCard() {
+export default function OpenTicketsCard({ value = '—' }) {
   return (
     <StatCard
       label="Open Tickets"
-      value="312"
+      value={value}
       delta="Live queue"
       deltaType="live"
       iconBg="#FCF0DD"

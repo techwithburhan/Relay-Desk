@@ -3,18 +3,21 @@ import gsap from 'gsap';
 import './TicketTimeline.css';
 
 function buildEvents(ticket) {
-  const events = [{ label: 'Ticket created', time: ticket.createdAt, who: ticket.requester }];
+  const events = [{ label: 'Ticket created', time: new Date(ticket.created_at).toLocaleString(), who: ticket.requester_name }];
   (ticket.comments || []).forEach((c) => {
-    events.push({ label: `${c.author} replied`, time: c.time, who: c.author });
+    events.push({ label: `${c.author_name} replied`, time: new Date(c.created_at).toLocaleString(), who: c.author_name });
   });
-  events.push({ label: `Status: ${ticket.status}`, time: ticket.updatedAt, who: ticket.assigned });
+  if (ticket.department_name) {
+    events.push({ label: `Assigned to ${ticket.department_name}`, time: '', who: ticket.department_name });
+  }
+  events.push({ label: `Status: ${ticket.status}`, time: new Date(ticket.updated_at).toLocaleString(), who: ticket.assigned_name });
   return events;
 }
 
 function buildActivityBars(ticket) {
   const counts = {};
   (ticket.comments || []).forEach((c) => {
-    counts[c.author] = (counts[c.author] || 0) + 1;
+    counts[c.author_name] = (counts[c.author_name] || 0) + 1;
   });
   const entries = Object.entries(counts);
   const max = Math.max(1, ...entries.map(([, n]) => n));
@@ -55,7 +58,7 @@ export default function TicketTimeline({ ticket }) {
 
   const events = buildEvents(ticket);
   const bars = buildActivityBars(ticket);
-  const ageLabel = ticket.createdAt;
+  const ageLabel = new Date(ticket.created_at).toLocaleDateString();
 
   return (
     <div className="panel timeline-panel">

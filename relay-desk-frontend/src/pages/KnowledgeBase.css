@@ -28,3 +28,9 @@
 .kb-meta{
   font-size:11.5px;color:var(--ink-400);
 }
+
+.kb-admin-panel{margin-bottom:16px;padding:20px 22px;}
+.kb-form{margin-top:16px;}
+.kb-content{font-size:12.5px;color:var(--ink-600);line-height:1.5;margin:6px 0 10px;}
+.kb-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.kb-readmore{text-decoration:none;font-size:12px;}

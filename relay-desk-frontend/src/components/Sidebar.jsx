@@ -1,18 +1,31 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { visibleWorkspaceLinks, adminLinks, systemLinks } from '../data/navLinks';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
+import * as api from '../api/client';
 import LogoutButton from './LogoutButton';
 import './Sidebar.css';
 
 export default function Sidebar() {
-  const { agent } = useAuth();
+  const { agent, token } = useAuth();
   const { logoUrl, portalName } = useBranding();
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('relaydesk.sidebarCollapsed') === 'true');
+  const [ticketCount, setTicketCount] = useState(null);
   const isAdmin = agent?.role === 'admin';
 
   const workspaceLinks = visibleWorkspaceLinks(agent?.role);
+
+  // Real count from the database — only shown for admin/dealer (a client
+  // only ever has their own tickets, so a queue-size badge isn't meaningful
+  // for them).
+  useEffect(() => {
+    if (agent?.role === 'admin' || agent?.role === 'dealer') {
+      api.getStats(token).then((s) => setTicketCount(s.totalTickets)).catch(() => setTicketCount(null));
+    } else {
+      setTicketCount(null);
+    }
+  }, [agent, token]);
 
   function toggleCollapsed() {
     setCollapsed((c) => {
@@ -48,7 +61,9 @@ export default function Sidebar() {
         >
           {link.icon}
           {!collapsed && link.label}
-          {!collapsed && link.badge && <span className="nav-badge">{link.badge}</span>}
+          {!collapsed && link.to === '/tickets' && ticketCount !== null && (
+            <span className="nav-badge">{ticketCount}</span>
+          )}
         </NavLink>
       ))}
 

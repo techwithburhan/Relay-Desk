@@ -16,6 +16,9 @@ import AdminDownloads from './pages/AdminDownloads';
 import AdminSlides from './pages/AdminSlides';
 import AdminLicense from './pages/AdminLicense';
 import DealerMapping from './pages/DealerMapping';
+import AdminUsers from './pages/AdminUsers';
+import AdminBranches from './pages/AdminBranches';
+import PendingTransfers from './pages/PendingTransfers';
 import Settings from './pages/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -44,6 +47,9 @@ export default function App() {
       <Route path="/admin/slides" element={<ProtectedRoute><AdminSlides /></ProtectedRoute>} />
       <Route path="/admin/license" element={<ProtectedRoute><AdminLicense /></ProtectedRoute>} />
       <Route path="/admin/dealers" element={<ProtectedRoute><DealerMapping /></ProtectedRoute>} />
+      <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
+      <Route path="/admin/branches" element={<ProtectedRoute><AdminBranches /></ProtectedRoute>} />
+      <Route path="/transfers" element={<ProtectedRoute><PendingTransfers /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
     </Routes>
   );

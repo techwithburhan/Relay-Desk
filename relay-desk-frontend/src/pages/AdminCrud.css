@@ -69,3 +69,13 @@
   .admin-crud-row{flex-wrap:wrap;}
   .row-main{width:100%;order:1;}
 }
+
+.slide-upload-row{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.slide-thumb{
+  width:90px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line);
+}
+.slide-thumb-small{
+  width:56px;height:56px;object-fit:contain;background:var(--bg);padding:6px;
+}

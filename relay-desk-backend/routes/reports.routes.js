@@ -5,9 +5,9 @@ import { scopeToBranch } from '../middleware/scopeToBranch.middleware.js';
 
 const router = Router();
 
-router.get('/stats', requireAuth, stats);
-router.get('/priority-volume', requireAuth, priorityVolume);
-router.get('/trend', requireAuth, trend);
+router.get('/stats', requireAuth, scopeToBranch, stats);
+router.get('/priority-volume', requireAuth, scopeToBranch, priorityVolume);
+router.get('/trend', requireAuth, scopeToBranch, trend);
 router.get('/tickets-by-branch', requireAuth, scopeToBranch, ticketsByBranch);
 
 export default router;

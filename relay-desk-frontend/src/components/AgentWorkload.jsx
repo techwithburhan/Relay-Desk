@@ -1,27 +1,25 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
+import { useAuth } from '../context/AuthContext';
+import * as api from '../api/client';
 import './AgentWorkload.css';
 
-const agents = [
-  { name: 'Daniel L.', tickets: 29 },
-  { name: 'Sarah J.', tickets: 22 },
-  { name: 'Lisa M.', tickets: 35 },
-  { name: 'Mike P.', tickets: 17 },
-];
-
-const max = Math.max(...agents.map((a) => a.tickets));
-
 export default function AgentWorkload() {
+  const { token } = useAuth();
   const rootRef = useRef(null);
+  const [agents, setAgents] = useState([]);
 
   useEffect(() => {
+    api.getAgentWorkload(token).then(setAgents).catch(() => setAgents([]));
+  }, [token]);
+
+  const max = Math.max(1, ...agents.map((a) => a.open_tickets));
+
+  useEffect(() => {
+    if (!rootRef.current || agents.length === 0) return;
     const bars = rootRef.current.querySelectorAll('.agent-bar');
-    gsap.fromTo(
-      bars,
-      { scaleY: 0 },
-      { scaleY: 1, duration: 0.7, stagger: 0.1, ease: 'power3.out', transformOrigin: 'bottom' }
-    );
-  }, []);
+    gsap.fromTo(bars, { scaleY: 0 }, { scaleY: 1, duration: 0.7, stagger: 0.1, ease: 'power3.out', transformOrigin: 'bottom' });
+  }, [agents]);
 
   return (
     <div className="panel workload-panel" ref={rootRef}>
@@ -33,11 +31,12 @@ export default function AgentWorkload() {
       </div>
       <div className="agent-bar-row">
         {agents.map((a) => (
-          <div className="agent-col" key={a.name}>
-            <div className="agent-bar" style={{ height: `${(a.tickets / max) * 100}%` }} />
+          <div className="agent-col" key={a.id}>
+            <div className="agent-bar" style={{ height: `${(a.open_tickets / max) * 100}%` }} />
             <span className="agent-name">{a.name}</span>
           </div>
         ))}
+        {agents.length === 0 && <div className="no-comments">No agent data yet.</div>}
       </div>
     </div>
   );

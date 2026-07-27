@@ -4,7 +4,11 @@ import {
   agentWorkload,
   listDealers,
   createDealer,
+  createAgent,
+  updateAgent,
+  deleteAgent,
   setDealerAccess,
+  setStatusPermission,
   resetDealerPassword,
 } from '../controllers/agents.controller.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
@@ -15,7 +19,11 @@ const router = Router();
 router.get('/', requireAuth, listAgents);
 router.get('/workload', requireAuth, agentWorkload);
 
-// Dealer Mapping (point 5) — admin only
+router.post('/', requireAuth, requireAdmin, createAgent);
+router.put('/:id', requireAuth, requireAdmin, updateAgent);
+router.delete('/:id', requireAuth, requireAdmin, deleteAgent);
+router.patch('/:id/status-permission', requireAuth, requireAdmin, setStatusPermission);
+
 router.get('/dealers', requireAuth, requireAdmin, listDealers);
 router.post('/dealers', requireAuth, requireAdmin, createDealer);
 router.patch('/:id/access', requireAuth, requireAdmin, setDealerAccess);

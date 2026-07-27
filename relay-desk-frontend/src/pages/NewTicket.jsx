@@ -2,36 +2,38 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageShell from '../components/PageShell';
 import Topbar from '../components/Topbar';
+import ConfettiBurst from '../components/ConfettiBurst';
 import { useAuth } from '../context/AuthContext';
+import * as api from '../api/client';
 import './NewTicket.css';
 
 export default function NewTicket() {
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, agent } = useAuth();
   const [departments, setDepartments] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [form, setForm] = useState({
-    subject: '',
-    requester: '',
+    requesterName: agent?.role === 'client' ? agent?.name || '' : '',
     priority: 'Medium',
-    assigned: '',
-    department: '',
+    departmentId: '',
+    branchId: '',
     attachmentName: '',
     attachmentUrl: '',
     description: '',
   });
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [error, setError] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/departments`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then(setDepartments)
-      .catch(() => setDepartments([]));
+    api.getDepartments(token).then(setDepartments).catch(() => setDepartments([]));
+    api.getBranches(token).then((all) => setBranches(all.filter((b) => b.status !== 'disabled'))).catch(() => setBranches([]));
   }, [token]);
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const selectedDept = departments.find((d) => String(d.id) === String(form.departmentId));
+  const isBranchDept = selectedDept?.name === 'Branch';
 
   const handleAttachment = (e) => {
     const file = e.target.files?.[0];
@@ -43,110 +45,138 @@ export default function NewTicket() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+
+    if (isBranchDept && !form.branchId) {
+      setError('Please select a Branch Location.');
+      return;
+    }
+
     setSubmitting(true);
-    // Note: full customer lookup UI isn't wired here yet — this creates a
-    // ticket record locally and takes you back to the list with a success
-    // banner. Swap in a real customer picker + api.createTicket() call once
-    // that's ready.
-    setTimeout(() => {
+    try {
+      const { ticketNumber } = await api.createTicket(token, {
+        subject: form.description?.slice(0, 80) || 'New support request',
+        requesterName: form.requesterName,
+        description: form.description,
+        priority: form.priority,
+        departmentId: form.departmentId ? Number(form.departmentId) : null,
+        branchId: isBranchDept ? Number(form.branchId) : null,
+        customerId: agent?.role === 'client' ? agent.customerId : undefined,
+        attachmentUrl: form.attachmentUrl || undefined,
+        attachmentName: form.attachmentName || undefined,
+      });
+
+      setShowConfetti(true);
+      setTimeout(() => {
+        navigate(`/tickets/${ticketNumber}`, {
+          state: { toast: '🎉 Ticket Created Successfully! We will update the status ASAP.' },
+        });
+      }, 1800);
+    } catch (err) {
+      setError(err.message);
       setSubmitting(false);
-      setToast(`Ticket created for "${form.subject}"`);
-      setTimeout(() => navigate('/tickets', { state: { toast: `Ticket created for "${form.subject}"` } }), 700);
-    }, 500);
+    }
   };
 
   return (
     <PageShell>
-      <Topbar title="New Ticket" subtitle="Log a new request on behalf of a customer." showExport={false} />
+      <Topbar title="New Ticket" subtitle="Log a new request." showExport={false} />
 
-      {toast && <div className="new-ticket-toast">✓ {toast}</div>}
+      {showConfetti && <ConfettiBurst />}
 
-      <form className="panel new-ticket-form" onSubmit={handleSubmit}>
-        <div className="form-row">
-          <label htmlFor="subject">Subject</label>
-          <input
-            id="subject"
-            type="text"
-            placeholder="Briefly describe the issue"
-            value={form.subject}
-            onChange={update('subject')}
-            required
-          />
+      {showConfetti ? (
+        <div className="ticket-success-banner">
+          <div className="ticket-success-emoji">🎉</div>
+          <h2>Ticket Created Successfully!</h2>
+          <p>Your request has been submitted successfully. We will update the status as soon as possible (ASAP).</p>
         </div>
-
-        <div className="form-row-split">
+      ) : (
+        <form className="panel new-ticket-form" onSubmit={handleSubmit}>
           <div className="form-row">
-            <label htmlFor="requester">Requester</label>
+            <label htmlFor="requesterName">Full Name</label>
             <input
-              id="requester"
+              id="requesterName"
               type="text"
-              placeholder="Customer name"
-              value={form.requester}
-              onChange={update('requester')}
+              placeholder="Your full name"
+              value={form.requesterName}
+              onChange={update('requesterName')}
+              readOnly={agent?.role === 'client'}
               required
             />
           </div>
-          <div className="form-row">
-            <label htmlFor="priority">Priority</label>
-            <select id="priority" value={form.priority} onChange={update('priority')}>
-              <option>Low</option>
-              <option>Medium</option>
-              <option>High</option>
-              <option>Urgent</option>
-            </select>
+
+          <div className="form-row-split">
+            <div className="form-row">
+              <label htmlFor="priority">Priority</label>
+              <select id="priority" value={form.priority} onChange={update('priority')}>
+                <option>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+                <option>Critical</option>
+              </select>
+            </div>
+            <div className="form-row">
+              <label htmlFor="department">Department</label>
+              <select id="department" value={form.departmentId} onChange={update('departmentId')} required>
+                <option value="">Select department</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
 
-        <div className="form-row-split">
+          {isBranchDept && (
+            <div className="form-row">
+              <label htmlFor="branchLocation">Branch Location</label>
+              <input
+                list="branch-options"
+                id="branchLocation"
+                placeholder="Search or select a branch…"
+                value={branches.find((b) => String(b.id) === String(form.branchId))?.location || ''}
+                onChange={(e) => {
+                  const match = branches.find((b) => b.location.toLowerCase() === e.target.value.toLowerCase());
+                  setForm((f) => ({ ...f, branchId: match ? match.id : '' }));
+                }}
+              />
+              <datalist id="branch-options">
+                {branches.map((b) => <option key={b.id} value={b.location} />)}
+              </datalist>
+            </div>
+          )}
+
           <div className="form-row">
-            <label htmlFor="assigned">Assign to</label>
-            <select id="assigned" value={form.assigned} onChange={update('assigned')}>
-              <option value="">Unassigned</option>
-              <option>John D.</option>
-              <option>Lisa M.</option>
-              <option>Oihn D.</option>
-              <option>Mike P.</option>
-            </select>
+            <label className="upload-btn">
+              Attach a file (optional)
+              <input type="file" onChange={handleAttachment} hidden />
+            </label>
+            {form.attachmentName && <span className="uploaded-tag">{form.attachmentName} ✓</span>}
           </div>
+
           <div className="form-row">
-            <label htmlFor="department">Department</label>
-            <select id="department" value={form.department} onChange={update('department')}>
-              <option value="">Select department</option>
-              {departments.map((d) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
+            <label htmlFor="description">Description</label>
+            <textarea
+              id="description"
+              rows={5}
+              placeholder="What happened? Include any steps to reproduce."
+              value={form.description}
+              onChange={update('description')}
+              required
+            />
           </div>
-        </div>
 
-        <div className="form-row">
-          <label className="upload-btn">
-            Attach a file (optional)
-            <input type="file" onChange={handleAttachment} hidden />
-          </label>
-          {form.attachmentName && <span className="uploaded-tag">{form.attachmentName} ✓</span>}
-        </div>
+          {error && <div className="new-ticket-toast error">{error}</div>}
 
-        <div className="form-row">
-          <label htmlFor="description">Description</label>
-          <textarea
-            id="description"
-            rows={5}
-            placeholder="What happened? Include any steps to reproduce."
-            value={form.description}
-            onChange={update('description')}
-          />
-        </div>
-
-        <div className="form-actions">
-          <button type="button" className="btn btn-outline" onClick={() => navigate('/tickets')}>
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-navy" disabled={submitting}>
-            {submitting ? 'Creating…' : 'Create Ticket'}
-          </button>
-        </div>
-      </form>
+          <div className="form-actions">
+            <button type="button" className="btn btn-outline" onClick={() => navigate('/tickets')}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-navy" disabled={submitting}>
+              {submitting ? 'Creating…' : 'Create Ticket'}
+            </button>
+          </div>
+        </form>
+      )}
     </PageShell>
   );
 }

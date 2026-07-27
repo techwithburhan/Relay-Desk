@@ -31,6 +31,7 @@ export default function Settings() {
   const [portalName, setPortalName] = useState(branding.portalName);
   const [logoPreview, setLogoPreview] = useState(branding.logoUrl);
   const [dashboardTicketsEnabled, setDashboardTicketsEnabled] = useState(branding.dashboardTicketsEnabled);
+  const [forgotPasswordEnabled, setForgotPasswordEnabled] = useState(branding.forgotPasswordEnabled);
   const [timeoutMinutes, setTimeoutMinutes] = useState(branding.sessionTimeoutMinutes);
   const [savingSettings, setSavingSettings] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
@@ -51,6 +52,7 @@ export default function Settings() {
         branding_logo_url: logoPreview || '',
         branding_portal_name: portalName,
         dashboard_tickets_enabled: String(dashboardTicketsEnabled),
+        forgot_password_enabled: String(forgotPasswordEnabled),
         session_timeout_minutes: String(timeoutMinutes),
       });
       setSaveMessage({ type: 'success', text: 'Settings saved. New session timeout applies on next login.' });
@@ -161,6 +163,11 @@ export default function Settings() {
               label="Show ticket widgets on the dashboard"
               checked={dashboardTicketsEnabled}
               onChange={() => setDashboardTicketsEnabled((v) => !v)}
+            />
+            <ToggleRow
+              label="Enable Forgot Password page for all users"
+              checked={forgotPasswordEnabled}
+              onChange={() => setForgotPasswordEnabled((v) => !v)}
             />
 
             {saveMessage && <div className={`save-message ${saveMessage.type}`}>{saveMessage.text}</div>}

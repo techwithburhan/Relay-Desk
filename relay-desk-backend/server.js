@@ -15,6 +15,8 @@ import slidesRoutes from './routes/slides.routes.js';
 import licenseRoutes from './routes/license.routes.js';
 import departmentsRoutes from './routes/departments.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
+import branchesRoutes from './routes/branches.routes.js';
+import transfersRoutes from './routes/transfers.routes.js';
 
 dotenv.config();
 
@@ -40,6 +42,8 @@ app.use('/api/slides', slidesRoutes);
 app.use('/api/license', licenseRoutes);
 app.use('/api/departments', departmentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/branches', branchesRoutes);
+app.use('/api/transfers', transfersRoutes);
 
 // 404 fallback
 app.use((req, res) => {

@@ -64,7 +64,9 @@ export async function login(req, res) {
       email: agent.email,
       role: agent.role,          // 'admin' | 'dealer' | 'client'
       branchId: agent.branch_id, // null for admins
+      departmentId: agent.department_id, // which department this user handles
       customerId: agent.customer_id, // only set for role='client'
+      canChangeStatus: Boolean(agent.can_change_status),
     };
 
     const [[{ setting_value: timeoutMinutes } = { setting_value: '10' }]] = await pool.query(

@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './RecentTickets.css';
-import allTickets from '../data/tickets';
+import { useAuth } from '../context/AuthContext';
+import * as api from '../api/client';
 import { statusClass } from '../data/statuses';
-
-const tickets = allTickets.slice(0, 5);
 
 const priorityClass = {
   Urgent: 'pri-urgent',
@@ -13,10 +12,17 @@ const priorityClass = {
   Low: 'pri-low',
 };
 
-
 export default function RecentTickets() {
-  const [page, setPage] = useState(1);
   const navigate = useNavigate();
+  const { token } = useAuth();
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getTickets(token)
+      .then((all) => setTickets(all.slice(0, 5)))
+      .finally(() => setLoading(false));
+  }, [token]);
 
   return (
     <div className="panel recent-tickets">
@@ -25,57 +31,45 @@ export default function RecentTickets() {
           <div className="panel-title">Recent Tickets</div>
           <div className="panel-sub">Newest activity across the queue</div>
         </div>
-        <div className="chip-row">
-          <div className="chip">Priority ▾</div>
-          <div className="chip">Status ▾</div>
-          <div className="chip">Filter ▾</div>
-        </div>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Ticket</th><th>Subject</th><th>Requester</th><th>Priority</th><th>Status</th><th>Assigned</th><th>Created</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tickets.map((t) => (
-            <tr key={t.id} className="clickable-row" onClick={() => navigate(`/tickets/${t.id}`)}>
-              <td className="tid mono">#{t.id}</td>
-              <td>{t.subject}</td>
-              <td>{t.requester}</td>
-              <td>
-                <span className={`pill ${priorityClass[t.priority]}`}>
-                  <span className="pill-dot" />
-                  {t.priority}
-                </span>
-              </td>
-              <td className={statusClass[t.status]}>{t.status}</td>
-              <td>
-                <div className="who">
-                  <div className="who-dot" />
-                  {t.assigned}
-                </div>
-              </td>
-              <td>{t.created}</td>
+      {loading && <div className="downloads-status">Loading…</div>}
+
+      {!loading && (
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket</th><th>Subject</th><th>Requester</th><th>Priority</th><th>Status</th><th>Assigned</th><th>Created</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="pagination">
-        {[1, 2, 3].map((n) => (
-          <div
-            key={n}
-            className={`page-btn${page === n ? ' active' : ''}`}
-            onClick={() => setPage(n)}
-          >
-            {n}
-          </div>
-        ))}
-        <div className="page-btn">›</div>
-        <div className="page-btn">»</div>
-      </div>
+          </thead>
+          <tbody>
+            {tickets.map((t) => (
+              <tr key={t.ticket_number} className="clickable-row" onClick={() => navigate(`/tickets/${t.ticket_number}`)}>
+                <td className="tid mono">#{t.ticket_number}</td>
+                <td>{t.subject}</td>
+                <td>{t.requester_name}</td>
+                <td>
+                  <span className={`pill ${priorityClass[t.priority]}`}>
+                    <span className="pill-dot" />
+                    {t.priority}
+                  </span>
+                </td>
+                <td className={statusClass[t.status]}>{t.status}</td>
+                <td>
+                  <div className="who">
+                    <div className="who-dot" />
+                    {t.assigned_name || 'Unassigned'}
+                  </div>
+                </td>
+                <td>{new Date(t.created_at).toLocaleString()}</td>
+              </tr>
+            ))}
+            {tickets.length === 0 && (
+              <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--ink-400)', padding: '20px' }}>No tickets yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

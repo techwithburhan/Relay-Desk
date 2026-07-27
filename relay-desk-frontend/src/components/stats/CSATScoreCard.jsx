@@ -1,13 +1,11 @@
 import StatCard from '../StatCard';
 
-export default function CSATScoreCard() {
+export default function CSATScoreCard({ value }) {
   return (
     <StatCard
       label="CSAT Score"
-      value="4.8"
-      unit="/5"
-      delta="▲ 0.2 this month"
-      deltaType="up"
+      value={value || 'N/A'}
+      unit={value ? '/5' : ''}
       iconBg="#FCF0DD"
       iconColor="#9A6812"
       icon={

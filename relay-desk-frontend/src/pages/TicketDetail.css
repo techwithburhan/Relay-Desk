@@ -48,6 +48,13 @@
 .status-message.success{color:var(--teal);}
 .status-message.error{color:#B23A28;}
 
+.td-remark-input{
+  width:100%;border:1.5px solid var(--line);border-radius:10px;
+  padding:11px 13px;font-size:13px;font-family:'Inter',sans-serif;
+  color:var(--ink-900);outline:none;resize:vertical;background:var(--amber-light);
+}
+.td-remark-input:focus{border-color:var(--amber);}
+
 .td-columns{
   display:grid;
   grid-template-columns:1fr 360px;
@@ -121,3 +128,39 @@
 }
 .td-not-found h2{margin-bottom:8px;}
 .td-not-found p{color:var(--ink-600);margin-bottom:20px;}
+
+/* ---- Ticket Transfer ---- */
+.transfer-row{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;
+}
+.transfer-from{font-size:13px;color:var(--ink-600);}
+.transfer-arrow{color:var(--ink-400);}
+.transfer-row select{
+  border:1.5px solid var(--line);border-radius:9px;padding:8px 12px;font-size:13px;
+  font-family:'Inter',sans-serif;color:var(--ink-900);
+}
+.transfer-note{font-size:11.5px;color:var(--ink-400);margin:0 0 10px;}
+.transfer-history{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+.transfer-history-row{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:12.5px;color:var(--ink-700);padding:8px 12px;background:var(--bg);border-radius:8px;
+}
+.transfer-status{font-size:10.5px;font-weight:700;text-transform:uppercase;padding:3px 9px;border-radius:20px;}
+.transfer-status.pending{background:var(--amber-light);color:#9A6812;}
+.transfer-status.accepted{background:var(--teal-light);color:var(--teal);}
+.transfer-status.rejected{background:var(--coral-light);color:#B23A28;}
+
+/* ---- Activity Timeline (redesigned) ---- */
+.activity-timeline{display:flex;flex-direction:column;gap:16px;}
+.timeline-entry{
+  display:flex;gap:16px;padding-bottom:16px;border-bottom:1px solid var(--line);
+}
+.timeline-entry:last-child{border-bottom:none;padding-bottom:0;}
+.timeline-date{
+  min-width:88px;font-size:11.5px;color:var(--ink-400);font-weight:600;
+  display:flex;flex-direction:column;gap:2px;flex-shrink:0;
+}
+.timeline-time{font-size:10.5px;color:var(--ink-400);font-weight:500;}
+.timeline-body{flex:1;}
+.timeline-actor{font-size:13px;font-weight:700;color:var(--teal);margin-bottom:3px;}
+.timeline-desc{font-size:13px;color:var(--ink-900);line-height:1.5;}

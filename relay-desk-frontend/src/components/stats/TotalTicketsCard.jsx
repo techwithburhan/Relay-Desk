@@ -1,12 +1,10 @@
 import StatCard from '../StatCard';
 
-export default function TotalTicketsCard() {
+export default function TotalTicketsCard({ value = '—' }) {
   return (
     <StatCard
       label="Total Tickets"
-      value="1,480"
-      delta="▲ 5.2% this week"
-      deltaType="up"
+      value={value}
       iconBg="#EDEFF6"
       iconColor="#5B6478"
       icon={

@@ -49,6 +49,9 @@ export function getTicket(token, ticketNumber) {
 export function updateTicketStatus(token, ticketNumber, updates) {
   return request(`/tickets/${ticketNumber}`, { method: 'PATCH', token, body: updates });
 }
+export function createTicket(token, payload) {
+  return request('/tickets', { method: 'POST', token, body: payload });
+}
 export function deleteTicket(token, ticketNumber) {
   return request(`/tickets/${ticketNumber}`, { method: 'DELETE', token });
 }
@@ -78,6 +81,47 @@ export function getTrend(token) {
 // ---------- Knowledge Base ----------
 export function getArticles(token) {
   return request('/knowledge-base', { token });
+}
+export function getArticle(token, id) {
+  return request(`/knowledge-base/${id}`, { token });
+}
+export function createArticle(token, payload) {
+  return request('/knowledge-base', { method: 'POST', token, body: payload });
+}
+export function updateArticle(token, id, payload) {
+  return request(`/knowledge-base/${id}`, { method: 'PUT', token, body: payload });
+}
+export function deleteArticle(token, id) {
+  return request(`/knowledge-base/${id}`, { method: 'DELETE', token });
+}
+
+// ---------- Users / Agents (full admin management) ----------
+export function getAgents(token) {
+  return request('/agents', { token });
+}
+export function createAgent(token, payload) {
+  return request('/agents', { method: 'POST', token, body: payload });
+}
+export function updateAgent(token, id, payload) {
+  return request(`/agents/${id}`, { method: 'PUT', token, body: payload });
+}
+export function setStatusPermission(token, id, canChangeStatus) {
+  return request(`/agents/${id}/status-permission`, { method: 'PATCH', token, body: { canChangeStatus } });
+}
+export function deleteAgent(token, id) {
+  return request(`/agents/${id}`, { method: 'DELETE', token });
+}
+export function getDealers(token) {
+  return request('/agents/dealers', { token });
+}
+export function createDealer(token, payload) {
+  return request('/agents/dealers', { method: 'POST', token, body: payload });
+}
+export function setDealerAccess(token, id, active) {
+  return request(`/agents/${id}/access`, { method: 'PATCH', token, body: { active } });
+}
+export function resetAgentPassword(token, id) {
+  return request(`/agents/${id}/reset-password`, { method: 'POST', token });
 }
 
 // ---------- Downloads ----------
@@ -147,6 +191,39 @@ export function deleteLogs(token, ids) {
 }
 export function deleteAllLogs(token) {
   return request('/logs/all', { method: 'DELETE', token });
+}
+
+// ---------- Departments ----------
+export function getDepartments(token) {
+  return request('/departments', { token });
+}
+
+// ---------- Branches ----------
+export function getBranches(token) {
+  return request('/branches', { token });
+}
+export function createBranch(token, payload) {
+  return request('/branches', { method: 'POST', token, body: payload });
+}
+export function updateBranch(token, id, payload) {
+  return request(`/branches/${id}`, { method: 'PUT', token, body: payload });
+}
+export function deleteBranch(token, id) {
+  return request(`/branches/${id}`, { method: 'DELETE', token });
+}
+
+// ---------- Ticket Transfers ----------
+export function requestTicketTransfer(token, ticketNumber, toDepartmentId) {
+  return request(`/tickets/${ticketNumber}/transfer`, { method: 'POST', token, body: { toDepartmentId } });
+}
+export function getPendingTransfers(token) {
+  return request('/transfers/pending', { token });
+}
+export function acceptTransfer(token, id) {
+  return request(`/transfers/${id}/accept`, { method: 'POST', token });
+}
+export function rejectTransfer(token, id) {
+  return request(`/transfers/${id}/reject`, { method: 'POST', token });
 }
 
 // ---------- Settings ----------

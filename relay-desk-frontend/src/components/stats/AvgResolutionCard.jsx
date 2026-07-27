@@ -1,13 +1,11 @@
 import StatCard from '../StatCard';
 
-export default function AvgResolutionCard() {
+export default function AvgResolutionCard({ value = '—' }) {
   return (
     <StatCard
       label="Avg Resolution"
-      value="4.1"
+      value={value}
       unit="hrs"
-      delta="▼ down from 4.6 hrs"
-      deltaType="down"
       iconBg="#E7EEFB"
       iconColor="#2E5AAC"
       icon={

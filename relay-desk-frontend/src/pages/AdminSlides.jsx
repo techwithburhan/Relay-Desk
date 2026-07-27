@@ -10,6 +10,7 @@ const MAX_SLIDES = 4;
 const emptyForm = {
   id: null,
   imageUrl: '',
+  productImageUrl: '',
   title: '',
   subtitle: '',
   description: '',
@@ -46,6 +47,14 @@ export default function AdminSlides() {
     reader.readAsDataURL(file);
   };
 
+  const handleProductImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setForm((f) => ({ ...f, productImageUrl: reader.result }));
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage(null);
@@ -77,6 +86,7 @@ export default function AdminSlides() {
     setForm({
       id: s.id,
       imageUrl: s.image_url || '',
+      productImageUrl: s.product_image_url || '',
       title: s.title || '',
       subtitle: s.subtitle || '',
       description: s.description || '',
@@ -114,11 +124,35 @@ export default function AdminSlides() {
         <div className="panel-title">{form.id ? 'Edit Slide' : `Add New Slide (${slides.length}/${MAX_SLIDES})`}</div>
         <form onSubmit={handleSubmit}>
           <div className="form-row">
-            <label className="upload-btn">
-              Upload Image
-              <input type="file" accept="image/*" onChange={handleImageUpload} hidden />
-            </label>
-            {form.imageUrl && <span className="uploaded-tag">Image attached ✓</span>}
+            <label>Large Background Image</label>
+            <div className="slide-upload-row">
+              {form.imageUrl && <img src={form.imageUrl} alt="Background preview" className="slide-thumb" />}
+              <label className="upload-btn">
+                {form.imageUrl ? 'Change Background Image' : 'Upload Background Image'}
+                <input type="file" accept="image/*" onChange={handleImageUpload} hidden />
+              </label>
+              {form.imageUrl && (
+                <button type="button" className="clear-logo-btn" onClick={() => setForm((f) => ({ ...f, imageUrl: '' }))}>
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="form-row">
+            <label>Small Product Image / Logo / Icon</label>
+            <div className="slide-upload-row">
+              {form.productImageUrl && <img src={form.productImageUrl} alt="Product preview" className="slide-thumb slide-thumb-small" />}
+              <label className="upload-btn">
+                {form.productImageUrl ? 'Change Logo/Icon' : 'Upload Logo/Icon'}
+                <input type="file" accept="image/*" onChange={handleProductImageUpload} hidden />
+              </label>
+              {form.productImageUrl && (
+                <button type="button" className="clear-logo-btn" onClick={() => setForm((f) => ({ ...f, productImageUrl: '' }))}>
+                  Remove
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="form-row-split">

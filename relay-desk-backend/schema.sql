@@ -18,24 +18,29 @@ USE relay_desk;
 
 -- ---------- Branches (locations — Delhi, Mumbai, etc.) ----------
 CREATE TABLE IF NOT EXISTS branches (
-  id         INT AUTO_INCREMENT PRIMARY KEY,
-  name       VARCHAR(120) NOT NULL,
-  location   VARCHAR(120) NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  name           VARCHAR(120) NOT NULL,
+  location       VARCHAR(120) NOT NULL,
+  manual_number  VARCHAR(30),
+  status         ENUM('enabled','disabled') NOT NULL DEFAULT 'enabled',
+  created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
 -- ---------- Agents (support staff / login users) ----------
 CREATE TABLE IF NOT EXISTS agents (
-  id            INT AUTO_INCREMENT PRIMARY KEY,
-  name          VARCHAR(120) NOT NULL,
-  email         VARCHAR(160) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
-  role          ENUM('admin','dealer','client') NOT NULL DEFAULT 'dealer',
-  branch_id     INT NULL,   -- NULL for admins (they aren't tied to one branch)
-  customer_id   INT NULL,   -- only set for role='client': which client record this login represents
-  active        TINYINT(1) NOT NULL DEFAULT 1,  -- Dealer Mapping: Allow Login / Disable Login
-  last_login_at DATETIME NULL,
-  created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+  id                INT AUTO_INCREMENT PRIMARY KEY,
+  name              VARCHAR(120) NOT NULL,
+  email             VARCHAR(160) NOT NULL UNIQUE,
+  password_hash     VARCHAR(255) NOT NULL,
+  role              ENUM('admin','dealer','client') NOT NULL DEFAULT 'dealer',
+  branch_id         INT NULL,       -- NULL for admins (they aren't tied to one branch)
+  department_id     INT NULL,       -- which department this user handles tickets for
+  branch_number     VARCHAR(30),    -- manual branch number, set by Admin
+  customer_id       INT NULL,       -- only set for role='client': which client record this login represents
+  active            TINYINT(1) NOT NULL DEFAULT 1,  -- Dealer Mapping: Allow Login / Disable Login
+  can_change_status TINYINT(1) NOT NULL DEFAULT 1,  -- User Management: per-user status-change permission
+  last_login_at     DATETIME NULL,
+  created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_agents_branch FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
@@ -71,6 +76,9 @@ CREATE TABLE IF NOT EXISTS departments (
   email      VARCHAR(160) NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+ALTER TABLE agents
+  ADD CONSTRAINT fk_agents_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL;
 
 -- ---------- Notifications (point 3: global notification center) ----------
 CREATE TABLE IF NOT EXISTS notifications (
@@ -168,24 +176,57 @@ CREATE TABLE IF NOT EXISTS tickets (
   id                INT AUTO_INCREMENT PRIMARY KEY,
   ticket_number     VARCHAR(20) NOT NULL UNIQUE,   -- e.g. "T-98051"
   subject           VARCHAR(255) NOT NULL,
+  requester_name    VARCHAR(160),   -- free-text name entered on the ticket form (no customer account required)
   description       TEXT,
+  remark            TEXT,  -- internal admin/dealer notes, not shown to the customer
   category          VARCHAR(80),
-  priority          ENUM('Low','Medium','High','Urgent') NOT NULL DEFAULT 'Medium',
+  priority          ENUM('Low','Medium','High','Urgent','Critical') NOT NULL DEFAULT 'Medium',
   status            ENUM('Open','Assigned','In Progress','Pending','Resolved','Closed','Reopened') NOT NULL DEFAULT 'Open',
-  customer_id       INT NOT NULL,
+  customer_id       INT NULL,   -- optional: only set when raised by/for a real customer account
   assigned_agent_id INT NULL,
-  department_id     INT NULL,
+  department_id     INT NULL,  -- which department this ticket is routed to (drives visibility)
+  branch_id         INT NULL,  -- set directly when Department = "Branch" (independent of customer_id)
   created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  CONSTRAINT fk_tickets_customer   FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+  CONSTRAINT fk_tickets_customer   FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
   CONSTRAINT fk_tickets_agent      FOREIGN KEY (assigned_agent_id) REFERENCES agents(id) ON DELETE SET NULL,
-  CONSTRAINT fk_tickets_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
+  CONSTRAINT fk_tickets_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,
+  CONSTRAINT fk_tickets_branch     FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_tickets_status     ON tickets(status);
 CREATE INDEX idx_tickets_priority   ON tickets(priority);
 CREATE INDEX idx_tickets_agent      ON tickets(assigned_agent_id);
 CREATE INDEX idx_tickets_department ON tickets(department_id);
+
+-- ---------- Ticket transfer workflow (request → accept/reject) ----------
+CREATE TABLE IF NOT EXISTS ticket_transfers (
+  id                  INT AUTO_INCREMENT PRIMARY KEY,
+  ticket_id           INT NOT NULL,
+  from_department_id  INT NULL,
+  to_department_id    INT NOT NULL,
+  requested_by        INT NULL,
+  status              ENUM('pending','accepted','rejected') NOT NULL DEFAULT 'pending',
+  created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+  resolved_at         DATETIME NULL,
+  CONSTRAINT fk_transfer_ticket FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
+  CONSTRAINT fk_transfer_from FOREIGN KEY (from_department_id) REFERENCES departments(id) ON DELETE SET NULL,
+  CONSTRAINT fk_transfer_to FOREIGN KEY (to_department_id) REFERENCES departments(id) ON DELETE CASCADE,
+  CONSTRAINT fk_transfer_agent FOREIGN KEY (requested_by) REFERENCES agents(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- ---------- Detailed activity timeline ----------
+CREATE TABLE IF NOT EXISTS ticket_activity (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  ticket_id     INT NOT NULL,
+  action_type   VARCHAR(40) NOT NULL,
+  description   TEXT,
+  performed_by  VARCHAR(120),
+  created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_activity_ticket FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_activity_ticket ON ticket_activity(ticket_id);
 
 -- ---------- Comments (ticket activity/replies — point 15: threaded conversation) ----------
 CREATE TABLE IF NOT EXISTS comments (
@@ -209,6 +250,7 @@ CREATE TABLE IF NOT EXISTS knowledge_base_articles (
   title      VARCHAR(255) NOT NULL,
   category   VARCHAR(80) NOT NULL,
   content    TEXT,
+  url        VARCHAR(255),  -- "Read More" link
   views      INT DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
@@ -218,13 +260,14 @@ CREATE TABLE IF NOT EXISTS knowledge_base_articles (
 -- Password for all seeded agents is: password123
 -- ============================================
 
-INSERT INTO branches (name, location) VALUES
-('Relay Desk — Delhi',   'Delhi'),
-('Relay Desk — Mumbai',  'Mumbai'),
-('Relay Desk — Pune',    'Pune');
+INSERT INTO branches (name, location, manual_number, status) VALUES
+('Relay Desk — Delhi',   'Delhi',   'BR-001', 'enabled'),
+('Relay Desk — Mumbai',  'Mumbai',  'BR-002', 'enabled'),
+('Relay Desk — Pune',    'Pune',    'BR-003', 'enabled');
 
--- ---------- Departments (point 12) ----------
+-- ---------- Departments (point 12) — "Branch" is a routable pseudo-department too ----------
 INSERT INTO departments (name, email) VALUES
+('Branch',                       'branch@gclbroking.com'),
 ('Account Opening / KYC',        'accountopening@gclbroking.com'),
 ('Trading / Dealing Desk',       'trading@gclbroking.com'),
 ('Back Office / Settlement',     'backoffice@gclbroking.com'),
@@ -292,13 +335,13 @@ INSERT INTO comments (ticket_id, author_name, author_type, body) VALUES
 (3, 'Lisa M.', 'agent',    'Refund has been issued, should reflect on your statement in 3-5 business days.'),
 (9, 'GCL IT', 'customer', 'Could someone walk me through exporting the latest margin report? Not finding the option.');
 
-INSERT INTO knowledge_base_articles (title, category, content, views) VALUES
-('Resetting a customer password', 'Account', 'Step-by-step guide for resetting a customer''s password from the admin panel.', 1200),
-('Understanding billing cycles', 'Billing', 'Explains how monthly and annual billing cycles are calculated.', 860),
-('Troubleshooting failed data exports', 'Product', 'Common causes of export failures and how to resolve them.', 640),
-('How to escalate an urgent ticket', 'Process', 'When and how to escalate a ticket to a team lead.', 410),
-('Setting up SSO for your workspace', 'Security', 'Guide for configuring single sign-on for a workspace.', 295),
-('API rate limits explained', 'Developers', 'Details on rate limit tiers by plan.', 188);
+INSERT INTO knowledge_base_articles (title, category, content, url, views) VALUES
+('Resetting a customer password', 'Account', 'Step-by-step guide for resetting a customer''s password from the admin panel.', 'https://help.example.com/reset-password', 1200),
+('Understanding billing cycles', 'Billing', 'Explains how monthly and annual billing cycles are calculated.', 'https://help.example.com/billing-cycles', 860),
+('Troubleshooting failed data exports', 'Product', 'Common causes of export failures and how to resolve them.', 'https://help.example.com/export-issues', 640),
+('How to escalate an urgent ticket', 'Process', 'When and how to escalate a ticket to a team lead.', 'https://help.example.com/escalation', 410),
+('Setting up SSO for your workspace', 'Security', 'Guide for configuring single sign-on for a workspace.', 'https://help.example.com/sso-setup', 295),
+('API rate limits explained', 'Developers', 'Details on rate limit tiers by plan.', 'https://help.example.com/rate-limits', 188);
 
 -- ---------- Default app settings (point 7, 12) ----------
 INSERT INTO app_settings (setting_key, setting_value) VALUES
@@ -306,7 +349,10 @@ INSERT INTO app_settings (setting_key, setting_value) VALUES
 ('branding_portal_name', 'Relay Desk'),
 ('dashboard_tickets_enabled', 'true'),      -- Settings toggle: show/hide all tickets on dashboard
 ('session_timeout_minutes', '10'),          -- point 8: default 10-minute session
-('staging_splash_image_url', '');           -- point 15: optional splash PNG for the staging flow
+('staging_splash_image_url', ''),          -- point 15: optional splash PNG for the staging flow
+('forgot_password_enabled', 'true'),        -- Admin toggle: show/hide + enable/disable the Forgot Password page
+('remark_visible_to_customer', 'false'),    -- Internal Remark visibility toggle — Customer
+('remark_visible_to_dealer', 'true');       -- Internal Remark visibility toggle — Dealer
 
 -- ---------- Essential / Software Downloads (point 5, 9) ----------
 INSERT INTO downloads (title, description, category, file_type, file_url, status, visible_to, sort_order) VALUES

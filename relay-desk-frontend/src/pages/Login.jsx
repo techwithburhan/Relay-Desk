@@ -19,7 +19,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn, loading, error, errorCode } = useAuth();
-  const { logoUrl, portalName, stagingSplashImageUrl } = useBranding();
+  const { logoUrl, portalName, stagingSplashImageUrl, forgotPasswordEnabled } = useBranding();
 
   const leftInnerRef = useRef(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -188,7 +188,13 @@ export default function Login() {
               {loading ? 'Logging in…' : 'Log In'}
             </button>
 
-            <Link to="/forgot-password" className="forgot-link">Forgot Password?</Link>
+            {forgotPasswordEnabled ? (
+              <Link to="/forgot-password" className="forgot-link">Forgot Password?</Link>
+            ) : (
+              <span className="forgot-link forgot-link-disabled" title="Forgot Password is currently disabled by your administrator">
+                Forgot Password?
+              </span>
+            )}
           </form>
 
           <div className="ad-row">
@@ -199,17 +205,26 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="login-right">
+      <div
+        className="login-right"
+        style={slide?.image_url ? { backgroundImage: `url(${slide.image_url})` } : undefined}
+      >
+        {slide?.image_url && <div className="login-right-overlay" />}
+
         <div className="right-graphic">
-          <div className="right-card">
-            <div className="right-card-title">Overview</div>
-            <div className="right-card-bars">
-              <span style={{ height: '40%' }} />
-              <span style={{ height: '70%' }} />
-              <span style={{ height: '55%' }} />
-              <span style={{ height: '85%' }} />
+          {slide?.product_image_url ? (
+            <img src={slide.product_image_url} alt="" className="right-product-img" />
+          ) : (
+            <div className="right-card">
+              <div className="right-card-title">Overview</div>
+              <div className="right-card-bars">
+                <span style={{ height: '40%' }} />
+                <span style={{ height: '70%' }} />
+                <span style={{ height: '55%' }} />
+                <span style={{ height: '85%' }} />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {slide ? (

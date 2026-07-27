@@ -1,13 +1,19 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import * as api from '../api/client';
+import { useBranding } from '../context/BrandingContext';
 import './License.css';
 
 export default function ForgotPassword() {
+  const { forgotPasswordEnabled, loaded } = useBranding();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+
+  if (loaded && !forgotPasswordEnabled) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();

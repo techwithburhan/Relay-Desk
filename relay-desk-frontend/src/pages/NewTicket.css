@@ -37,6 +37,7 @@
   background:var(--teal-light);color:var(--teal);font-weight:600;font-size:13px;
   padding:12px 16px;border-radius:10px;margin-bottom:14px;
 }
+.new-ticket-toast.error{background:var(--coral-light);color:#B23A28;}
 
 .new-ticket-form .upload-btn{
   display:inline-block;border:1.5px solid var(--line);border-radius:9px;
@@ -52,3 +53,11 @@
   .form-row-split{grid-template-columns:1fr;}
   .new-ticket-form{padding:20px 18px 18px;}
 }
+
+.ticket-success-banner{
+  background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:60px 24px;text-align:center;
+}
+.ticket-success-emoji{font-size:48px;margin-bottom:16px;}
+.ticket-success-banner h2{font-size:22px;margin:0 0 10px;color:var(--ink-900);}
+.ticket-success-banner p{font-size:14px;color:var(--ink-600);max-width:420px;margin:0 auto;}

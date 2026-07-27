@@ -1,27 +1,46 @@
 import pool from '../config/db.js';
 
-// GET /api/reports/stats  → powers the 5 stat cards on the Overview page
+function buildScope(req) {
+  const clauses = [];
+  const params = [];
+  if (req.customerFilter) {
+    clauses.push('t.customer_id = ?');
+    params.push(req.customerFilter);
+  } else if (req.branchFilter || req.departmentFilter) {
+    const parts = [];
+    if (req.branchFilter) { parts.push('COALESCE(t.branch_id, c.branch_id) = ?'); params.push(req.branchFilter); }
+    if (req.departmentFilter) { parts.push('t.department_id = ?'); params.push(req.departmentFilter); }
+    clauses.push(`(${parts.join(' OR ')})`);
+  }
+  return { clause: clauses.length ? `AND ${clauses.join(' AND ')}` : '', params };
+}
+
+// GET /api/reports/stats  → powers the 5 stat cards on the Overview page,
+// and the real Tickets count badge in the sidebar (admin/dealer only).
 export async function stats(req, res) {
+  const { clause, params } = buildScope(req);
+  const base = `FROM tickets t LEFT JOIN customers c ON c.id = t.customer_id WHERE 1=1 ${clause}`;
+
   try {
-    const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM tickets');
+    const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total ${base}`, params);
     const [[{ open }]] = await pool.query(
-      `SELECT COUNT(*) AS open FROM tickets WHERE status != 'Solved'`
+      `SELECT COUNT(*) AS open ${base} AND t.status NOT IN ('Resolved','Closed')`,
+      params
     );
     const [[{ solvedToday }]] = await pool.query(
-      `SELECT COUNT(*) AS solvedToday FROM tickets
-       WHERE status = 'Solved' AND DATE(updated_at) = CURDATE()`
+      `SELECT COUNT(*) AS solvedToday ${base} AND t.status = 'Resolved' AND DATE(t.updated_at) = CURDATE()`,
+      params
     );
-    const [[{ avgResolutionHours }]] = await pool.query(`
-      SELECT AVG(TIMESTAMPDIFF(MINUTE, created_at, updated_at)) / 60 AS avgResolutionHours
-      FROM tickets WHERE status = 'Solved'
-    `);
+    const [[{ avgResolutionHours }]] = await pool.query(
+      `SELECT AVG(TIMESTAMPDIFF(MINUTE, t.created_at, t.updated_at)) / 60 AS avgResolutionHours ${base} AND t.status = 'Resolved'`,
+      params
+    );
 
     res.json({
       totalTickets: total,
       openTickets: open,
       solvedToday,
       avgResolutionHours: avgResolutionHours ? Number(avgResolutionHours.toFixed(1)) : 0,
-      // CSAT isn't tracked yet — wire this up once you add a ratings table
       csatScore: null,
     });
   } catch (err) {
@@ -32,13 +51,15 @@ export async function stats(req, res) {
 
 // GET /api/reports/priority-volume  → powers the Volume by Priority donut
 export async function priorityVolume(req, res) {
+  const { clause, params } = buildScope(req);
   try {
-    const [rows] = await pool.query(`
-      SELECT priority, COUNT(*) AS count
-      FROM tickets
-      WHERE status != 'Solved'
-      GROUP BY priority
-    `);
+    const [rows] = await pool.query(
+      `SELECT t.priority, COUNT(*) AS count
+       FROM tickets t LEFT JOIN customers c ON c.id = t.customer_id
+       WHERE t.status NOT IN ('Resolved','Closed') ${clause}
+       GROUP BY t.priority`,
+      params
+    );
     const total = rows.reduce((sum, r) => sum + r.count, 0) || 1;
     const withPct = rows.map((r) => ({
       priority: r.priority,
@@ -56,17 +77,17 @@ export async function priorityVolume(req, res) {
 export async function ticketsByBranch(req, res) {
   const { branchFilter, customerFilter } = req;
   try {
-    const clauses = [`t.status != 'Solved'`];
+    const clauses = [`t.status NOT IN ('Resolved','Closed')`];
     const params = [];
-    if (branchFilter) { clauses.push('c.branch_id = ?'); params.push(branchFilter); }
+    if (branchFilter) { clauses.push('b.id = ?'); params.push(branchFilter); }
     if (customerFilter) { clauses.push('c.id = ?'); params.push(customerFilter); }
 
     const [rows] = await pool.query(
       `
       SELECT b.id AS branch_id, b.name AS branch_name, b.location, COUNT(t.id) AS open_count
       FROM branches b
-      LEFT JOIN customers c ON c.branch_id = b.id
-      LEFT JOIN tickets t ON t.customer_id = c.id AND ${clauses.join(' AND ')}
+      LEFT JOIN tickets t ON COALESCE(t.branch_id, (SELECT c2.branch_id FROM customers c2 WHERE c2.id = t.customer_id)) = b.id AND ${clauses.join(' AND ')}
+      LEFT JOIN customers c ON c.id = t.customer_id
       GROUP BY b.id
       ORDER BY open_count DESC
       `,
@@ -78,22 +99,25 @@ export async function ticketsByBranch(req, res) {
     res.status(500).json({ message: 'Failed to fetch tickets by branch.' });
   }
 }
+
+// GET /api/reports/trend  → last 7 days, created vs resolved
 export async function trend(req, res) {
+  const { clause, params } = buildScope(req);
   try {
-    const [created] = await pool.query(`
-      SELECT DATE(created_at) AS day, COUNT(*) AS count
-      FROM tickets
-      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-      GROUP BY DATE(created_at)
-      ORDER BY day ASC
-    `);
-    const [resolved] = await pool.query(`
-      SELECT DATE(updated_at) AS day, COUNT(*) AS count
-      FROM tickets
-      WHERE status = 'Solved' AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-      GROUP BY DATE(updated_at)
-      ORDER BY day ASC
-    `);
+    const [created] = await pool.query(
+      `SELECT DATE(t.created_at) AS day, COUNT(*) AS count
+       FROM tickets t LEFT JOIN customers c ON c.id = t.customer_id
+       WHERE t.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) ${clause}
+       GROUP BY DATE(t.created_at) ORDER BY day ASC`,
+      params
+    );
+    const [resolved] = await pool.query(
+      `SELECT DATE(t.updated_at) AS day, COUNT(*) AS count
+       FROM tickets t LEFT JOIN customers c ON c.id = t.customer_id
+       WHERE t.status = 'Resolved' AND t.updated_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) ${clause}
+       GROUP BY DATE(t.updated_at) ORDER BY day ASC`,
+      params
+    );
     res.json({ created, resolved });
   } catch (err) {
     console.error(err);

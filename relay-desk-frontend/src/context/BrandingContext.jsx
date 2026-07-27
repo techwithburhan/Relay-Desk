@@ -10,6 +10,7 @@ const DEFAULTS = {
   dashboard_tickets_enabled: 'true',
   session_timeout_minutes: '10',
   staging_splash_image_url: '',
+  forgot_password_enabled: 'true',
 };
 
 export function BrandingProvider({ children }) {
@@ -45,6 +46,7 @@ export function BrandingProvider({ children }) {
     dashboardTicketsEnabled: settings.dashboard_tickets_enabled !== 'false',
     sessionTimeoutMinutes: Number(settings.session_timeout_minutes) || 10,
     stagingSplashImageUrl: settings.staging_splash_image_url || '',
+    forgotPasswordEnabled: settings.forgot_password_enabled !== 'false',
     loaded,
     save,
     refresh,

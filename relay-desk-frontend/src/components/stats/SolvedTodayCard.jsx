@@ -1,12 +1,10 @@
 import StatCard from '../StatCard';
 
-export default function SolvedTodayCard() {
+export default function SolvedTodayCard({ value = '—' }) {
   return (
     <StatCard
       label="Solved Today"
-      value="96"
-      delta="▲ 12 vs yesterday"
-      deltaType="up"
+      value={value}
       iconBg="#E4F7F3"
       iconColor="#0E9C8E"
       icon={

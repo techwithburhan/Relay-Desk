@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import PageShell from '../components/PageShell';
 import Topbar from '../components/Topbar';
 import TotalTicketsCard from '../components/stats/TotalTicketsCard';
@@ -11,6 +12,7 @@ import AgentWorkload from '../components/AgentWorkload';
 import AIChatPopup from '../components/AIChatPopup';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
+import * as api from '../api/client';
 import './Overview.css';
 
 function timeGreeting() {
@@ -23,18 +25,27 @@ function timeGreeting() {
 const roleLabel = { admin: 'Admin', dealer: 'Dealer', client: 'Client' };
 
 export default function Overview() {
-  const { agent } = useAuth();
+  const { agent, token } = useAuth();
   const { dashboardTicketsEnabled } = useBranding();
   const firstName = agent?.name?.split(' ')[0] || 'there';
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    api.getStats(token).then(setStats).catch(() => setStats(null));
+  }, [token]);
 
   return (
     <PageShell>
       <Topbar
         title={`${timeGreeting()}, ${roleLabel[agent?.role] || ''} ${firstName}`}
         subtitle={
-          <>
-            Queue health looks steady — <b>312 tickets</b> open, avg first response holding under 5 min.
-          </>
+          stats ? (
+            <>
+              Queue health looks steady — <b>{stats.openTickets} tickets</b> open, avg first response holding under 5 min.
+            </>
+          ) : (
+            'Loading your queue health…'
+          )
         }
         showExport={false}
       />
@@ -42,11 +53,11 @@ export default function Overview() {
       {dashboardTicketsEnabled ? (
         <>
           <div className="stats-grid">
-            <TotalTicketsCard />
-            <OpenTicketsCard />
-            <SolvedTodayCard />
-            <AvgResolutionCard />
-            <CSATScoreCard />
+            <TotalTicketsCard value={stats?.totalTickets} />
+            <OpenTicketsCard value={stats?.openTickets} />
+            <SolvedTodayCard value={stats?.solvedToday} />
+            <AvgResolutionCard value={stats?.avgResolutionHours} />
+            <CSATScoreCard value={stats?.csatScore} />
           </div>
 
           <div className="overview-grid">
