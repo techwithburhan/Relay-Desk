@@ -1,6 +1,0 @@
-.reports-grid{
-  display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:16px;
-}
-@media(max-width:900px){
-  .reports-grid{grid-template-columns:1fr;}
-}
