@@ -1,0 +1,23 @@
+.stats-grid{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px;
+}
+@media(max-width:1100px){
+  .stats-grid{grid-template-columns:repeat(3,1fr);}
+}
+@media(max-width:680px){
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+}
+
+.overview-grid{
+  display:grid;grid-template-columns:2fr 1fr;gap:16px;
+}
+@media(max-width:960px){
+  .overview-grid{grid-template-columns:1fr;}
+}
+
+.side-stack{display:flex;flex-direction:column;gap:16px;}
+
+.tickets-disabled-note{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:24px;text-align:center;color:var(--ink-600);font-size:13.5px;
+}

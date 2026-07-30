@@ -1,0 +1,6 @@
+.trend-panel{padding-bottom:16px;}
+.trend-legend{
+  display:flex;gap:18px;font-size:11.5px;color:var(--ink-600);padding:0 0 4px 4px;
+}
+.trend-legend div{display:flex;align-items:center;gap:6px;}
+.swatch{width:10px;height:3px;display:inline-block;border-radius:2px;}
